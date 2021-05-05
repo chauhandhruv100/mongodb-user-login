@@ -1,20 +1,23 @@
 from flask import Flask, render_template, url_for, request, session, redirect
-from flask.ext.pymongo import PyMongo
+from flask_pymongo import PyMongo
 import bcrypt
+from pymongo import MongoClient
+import json
 
 app = Flask(__name__)
 
-app.config['MONGO_DBNAME'] = 'mongologinexample'
-app.config['MONGO_URI'] = 'mongodb://pretty:printed@ds021731.mlab.com:21731/mongologinexample'
+app.config['MONGO_DBNAME'] = 'Login'
+app.config['MONGO_URI'] = 'mongodb+srv://dbadmin:adminuser@logindetails.qx1k3.mongodb.net/Login?retryWrites=true&w=majority'
 
 mongo = PyMongo(app)
 
 @app.route('/')
 def index():
     if 'username' in session:
-        return 'You are logged in as ' + session['username']
+        return 'Logged in as '+ session['username'] + '<br>' + "<b><a href = '/logout'>click here to log out</a></b>"
 
     return render_template('index.html')
+ 
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -22,11 +25,17 @@ def login():
     login_user = users.find_one({'name' : request.form['username']})
 
     if login_user:
-        if bcrypt.hashpw(request.form['pass'].encode('utf-8'), login_user['password'].encode('utf-8')) == login_user['password'].encode('utf-8'):
+        if bcrypt.hashpw(request.form['pass'].encode('utf-8'), login_user['password']) == login_user['password']:
             session['username'] = request.form['username']
             return redirect(url_for('index'))
 
     return 'Invalid username/password combination'
+
+@app.route('/logout')
+def logout():
+   # remove the username from the session if it is there
+   session.pop('username', None)
+   return redirect(url_for('index'))
 
 @app.route('/register', methods=['POST', 'GET'])
 def register():
